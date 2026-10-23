@@ -1,7 +1,5 @@
 <title>大工給与帳</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap">
 <style>
 /* 藍の作業着と墨付け: 明るい灰白の地に藍を一色。画面下にタブ、上から「要約→明細」 */
 :root{
@@ -48,7 +46,6 @@ main{padding-block:16px calc(110px + env(safe-area-inset-bottom,0px));display:fl
 .h{font-size:18px;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px}
 .row-between{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .xl{font-size:32px;font-weight:700;letter-spacing:.01em}
-.tag{display:inline-block;font-size:16px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 10px;margin-left:6px;font-weight:400}
 
 .btn{min-height:52px;padding:10px 18px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:17px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
@@ -64,6 +61,7 @@ main{padding-block:16px calc(110px + env(safe-area-inset-bottom,0px));display:fl
 
 .banner{background:var(--warn-soft);color:var(--fg);border:1px solid var(--warn);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .banner b{color:var(--warn)}
+.steps{margin:0 0 12px;padding-left:1.4em;line-height:1.8}
 
 ul.plain,ul.recs,ul.rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
 .line{width:100%;border:0;border-top:1px solid var(--line);background:none;min-height:56px;display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:center;text-align:left;padding:6px 0}
@@ -137,7 +135,6 @@ ul.recs{gap:8px}
 .slip{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 16px;display:flex;flex-direction:column;gap:14px}
 .slip-hd{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border-top:6px solid var(--accent);padding-top:12px}
 .slip-hd h3{font-size:24px;letter-spacing:.12em}
-.stamp{color:var(--warn);border:2px solid var(--warn);border-radius:6px;padding:0 8px;font-weight:700;font-size:16px}
 .slip-meta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .slip-meta .to{font-size:22px;font-weight:700;border-bottom:2px solid var(--fg);padding-bottom:2px;display:inline-block}
 .slip-meta .from{text-align:right;color:var(--muted);font-size:16px;margin-left:auto}
@@ -219,39 +216,30 @@ function blank(){return{v:2,sample:false,
   carpenters:[],sites:[],records:[],
   adjItems:[{id:'a1',name:'交通費',sign:1},{id:'a2',name:'立替金',sign:1},{id:'a3',name:'前払い',sign:-1},{id:'a4',name:'調整',sign:1}],
   adj:{}}}
-function sampleState(){
-  const st=blank();st.sample=true;
-  st.settings.biz='（サンプル）○○工務店';st.settings.addr='○○県○○市1-2-3';
-  st.carpenters=[
-    {id:'c1',name:'佐藤 健一',daily:25000,memo:''},
-    {id:'c2',name:'鈴木 大輔',daily:23000,memo:''},
-    {id:'c3',name:'高橋 誠',daily:22000,memo:''}];
-  const t=new Date();const back=n=>{const d=new Date(t);d.setDate(d.getDate()-n);return ymd(d)};
-  st.sites=[
-    {id:'s1',name:'山本様邸 新築',place:'東区 桜町2丁目',created:back(40)},
-    {id:'s2',name:'田中様邸 新築',place:'南区 緑ヶ丘',created:back(30)},
-    {id:'s3',name:'中村様邸 新築',place:'北区 本町5丁目',created:back(12)}];
-  for(let i=30;i>=1;i--){
-    const ds=back(i),d=parseD(ds);if(d.getDay()===0)continue;
-    const sat=d.getDay()===6;let siteId,workers;
-    if(i>20){siteId='s1';workers=[{cid:'c1',days:1}];if(!sat)workers.push({cid:'c2',days:1})}
-    else if(i>9){siteId='s2';workers=[{cid:'c1',days:1},{cid:'c2',days:1}];if(i%3===0)workers.push({cid:'c3',days:1})}
-    else{siteId='s3';workers=[{cid:'c1',days:1},{cid:'c3',days:1}]}
-    st.records.push({id:uid(),date:ds,siteId,workers});
-  }
-  return st;
-}
 let S;
 function load(){try{const t=localStorage.getItem(KEY);if(t)return JSON.parse(t)}catch(e){}return null}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast('保存できませんでした（端末の保存領域を確認してください）')}}
 // 旧版（坪単価・半日・源泉あり）のデータを日当制に合わせる
-function migrate(d){if((d.v||1)>=2)return d;if(d.sample)return sampleState();
+function migrate(d){if((d.v||1)>=2)return d;if(d.sample)return blank();
   d.v=2;d.settings={biz:d.settings?.biz||'',addr:d.settings?.addr||'',closing:20};delete d.grades;
   d.carpenters.forEach(c=>{delete c.type;c.daily=c.daily||0});
   d.sites.forEach(s=>{delete s.gradeId;delete s.floors;delete s.tsubo});
   d.records.forEach(r=>r.workers.forEach(w=>w.days=1));return d}
-S=load();if(!S||!Array.isArray(S.carpenters)){S=sampleState();save()}else if((S.v||1)<2){S=migrate(S);save()}
+S=load();if(!S||!Array.isArray(S.carpenters)){S=blank();save()}else if((S.v||1)<2){S=migrate(S);save()}
 
+// バックアップの中身を検査して、形の合わないものは読み込まない
+function clean(d){const ok=(c,m)=>{if(!c)throw new Error(m)};const ID=/^[A-Za-z0-9_-]{1,40}$/,str=v=>String(v??'').slice(0,200);
+  const cl=v=>{const n=Math.round(toNum(v));return n>=0&&n<=28?n:20};
+  ok(Array.isArray(d.carpenters)&&Array.isArray(d.records)&&Array.isArray(d.sites),'form');
+  const out=blank();out.settings={biz:str(d.settings?.biz),addr:str(d.settings?.addr),closing:cl(d.settings?.closing??20)};
+  out.carpenters=d.carpenters.map(c=>{ok(ID.test(c.id),'id');const o={id:c.id,name:str(c.name),daily:Math.max(0,toNum(c.daily)),memo:str(c.memo)};if(c.closing!=null&&c.closing!=='')o.closing=cl(c.closing);return o});
+  out.sites=d.sites.map(x=>{ok(ID.test(x.id),'id');return{id:x.id,name:str(x.name),place:str(x.place),created:/^\d{4}-\d{2}-\d{2}$/.test(x.created)?x.created:today()}});
+  out.records=d.records.map(r=>{ok(ID.test(r.id)&&ID.test(r.siteId)&&/^\d{4}-\d{2}-\d{2}$/.test(r.date)&&Array.isArray(r.workers),'rec');
+    return{id:r.id,date:r.date,siteId:r.siteId,workers:r.workers.map(w=>{ok(ID.test(w.cid),'id');return{cid:w.cid,days:1}})}});
+  if(Array.isArray(d.adjItems))out.adjItems=d.adjItems.map(a=>{ok(ID.test(a.id),'id');return{id:a.id,name:str(a.name),sign:a.sign<0?-1:1}});
+  out.adj={};for(const k in d.adj||{}){ok(/^\d{4}-\d{2}$/.test(k),'adj');out.adj[k]={};
+    for(const cid in d.adj[k]){ok(ID.test(cid),'id');out.adj[k][cid]={};for(const a in d.adj[k][cid]){ok(ID.test(a),'id');out.adj[k][cid][a]=toNum(d.adj[k][cid][a])}}}
+  return out}
 const carp=id=>S.carpenters.find(c=>c.id===id);
 const site=id=>S.sites.find(s=>s.id===id);
 const siteMeta=s=>s.place||'';
@@ -309,17 +297,22 @@ function render(){
 }
 function recList(arr){return `<ul class="recs">${arr.map(r=>{const s=site(r.siteId);
   const ws=r.workers.map(w=>(carp(w.cid)?.name||'（削除）').split(/\s/)[0]).join('・');
-  return `<li><button class="rec" data-act="editRec" data-id="${r.id}"><span class="d">${fmtD(r.date)}</span><span class="s">${esc(s?s.name:'（削除された現場）')}<span class="w">${esc(ws)}</span></span></button></li>`}).join('')}</ul>`}
+  return `<li><button class="rec" data-act="editRec" data-id="${esc(r.id)}"><span class="d">${fmtD(r.date)}</span><span class="s">${esc(s?s.name:'（削除された現場）')}<span class="w">${esc(ws)}</span></span></button></li>`}).join('')}</ul>`}
 
 function vHome(){
   const key=periodOf(today()),slips=currentSlips(),total=slips.reduce((x,s)=>x+s.net,0);
   const recent=[...S.records].sort(byDateDesc).slice(0,5);
   return `${S.sample?`<div class="banner"><div><b>サンプルデータを表示中</b><br>名前・現場・金額はすべて架空の例です。</div><button class="btn" data-act="clearSample">サンプルを消して使い始める</button></div>`:''}
+  ${!S.sample&&(!S.carpenters.length||!S.settings.biz)?`<section class="card"><h2 class="h">はじめに</h2><ol class="steps">
+    <li>${S.carpenters.length?'✓ ':''}「設定」で大工さんの名前と日当を登録</li>
+    <li>${S.settings.biz?'✓ ':''}「設定」で明細に載せる事業者名を入れる</li>
+    <li>来た日に「今日の記録をつける」で現場と大工さんを選ぶ</li></ol>
+    <button class="btn wide" data-act="tab" data-v="settings">設定を開く</button></section>`:''}
   <button class="big" data-act="newRec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>今日の記録をつける</span></button>
   <section class="card">
     <div class="eyebrow">${slips.some(s=>s.own)?`今の締め期間（基本は${periodLabel(key)} ${rangeLabel(key)}）`:`${periodLabel(key)}（${rangeLabel(key)}）`}</div>
-    <div class="row-between"><span>支払予定の合計<span class="tag">参考値</span></span><strong class="num xl">${yen(total)}</strong></div>
-    ${slips.length?`<ul class="plain">${slips.map(s=>`<li><button class="line" data-act="slip" data-cid="${s.c.id}" data-key="${s.key}"><span>${esc(s.c.name)}${s.own?`<br><span class="muted">${esc(ownRange(s))}</span>`:''}</span><span class="num muted">${dayStr(s.days)}日</span><span class="num"><b>${yen(s.net)}</b> <span class="chev">›</span></span></button></li>`).join('')}</ul>`:'<p class="muted" style="margin:0">この期間の記録はまだありません。</p>'}
+    <div class="row-between"><span>支払予定の合計</span><strong class="num xl">${yen(total)}</strong></div>
+    ${slips.length?`<ul class="plain">${slips.map(s=>`<li><button class="line" data-act="slip" data-cid="${esc(s.c.id)}" data-key="${s.key}"><span>${esc(s.c.name)}${s.own?`<br><span class="muted">${esc(ownRange(s))}</span>`:''}</span><span class="num muted">${dayStr(s.days)}日</span><span class="num"><b>${yen(s.net)}</b> <span class="chev">›</span></span></button></li>`).join('')}</ul>`:'<p class="muted" style="margin:0">この期間の記録はまだありません。</p>'}
   </section>
   <h2 class="h">最近の記録</h2>
   ${recent.length?recList(recent):'<p class="muted">まだ記録がありません。上のボタンから始めてください。</p>'}`}
@@ -343,10 +336,10 @@ function vPay(){
   const head=`<div class="pnav"><button class="icon-btn" data-act="payMove" data-v="-1" aria-label="前の期間">‹</button><div><strong>${periodLabel(key)}</strong><span class="muted">${rangeLabel(key)}</span></div><button class="icon-btn" data-act="payMove" data-v="1" aria-label="次の期間">›</button></div>
   <div class="seg"><button class="${ui.payView==='slip'?'on':''}" data-act="payView" data-v="slip">大工ごと</button><button class="${ui.payView==='site'?'on':''}" data-act="payView" data-v="site">現場ごと</button><button class="${ui.payView==='month'?'on':''}" data-act="payView" data-v="month">月別</button></div>`;
   if(ui.payView==='slip'){const total=slips.reduce((x,s)=>x+s.net,0);const none=S.carpenters.length-slips.length;
-    return head+`<section class="card"><div class="row-between"><span>差引支給額の合計<span class="tag">参考値</span></span><strong class="num xl">${yen(total)}</strong></div>
-    ${slips.length?`<ul class="plain">${slips.map(s=>`<li><button class="line" data-act="slip" data-cid="${s.c.id}" data-key="${key}"><span>${esc(s.c.name)}<br><span class="muted">日当 ${yen(s.c.daily||0)}・${dayStr(s.days)}日${s.own?`<br>${esc(closingLabel(s.cl))}（${rangeLabel(s.key,s.cl)}）`:''}</span></span><span></span><span class="num"><b>${yen(s.net)}</b> <span class="chev">›</span></span></button></li>`).join('')}</ul>`:'<p class="muted" style="margin:0">この期間の記録はありません。</p>'}
+    return head+`<section class="card"><div class="row-between"><span>差引支給額の合計</span><strong class="num xl">${yen(total)}</strong></div>
+    ${slips.length?`<ul class="plain">${slips.map(s=>`<li><button class="line" data-act="slip" data-cid="${esc(s.c.id)}" data-key="${key}"><span>${esc(s.c.name)}<br><span class="muted">日当 ${yen(s.c.daily||0)}・${dayStr(s.days)}日${s.own?`<br>${esc(closingLabel(s.cl))}（${rangeLabel(s.key,s.cl)}）`:''}</span></span><span></span><span class="num"><b>${yen(s.net)}</b> <span class="chev">›</span></span></button></li>`).join('')}</ul>`:'<p class="muted" style="margin:0">この期間の記録はありません。</p>'}
     ${none>0&&slips.length?`<p class="note">この期間に記録がない大工：${none}人</p>`:''}</section>
-    <p class="note">金額は記録から出した参考値です。名前をタップして明細を開き、手当・控除を入れて確認してから渡してください。</p>`}
+    <p class="note">名前をタップすると明細が開きます。交通費などの手当・控除を入れてから渡してください。</p>`}
   if(ui.payView==='site'){const agg={};
     slips.forEach(s=>s.lines.forEach(l=>{const a=agg[l.sid]||(agg[l.sid]={name:l.name,days:0,amt:0,sid:l.sid});a.days+=l.days;a.amt+=l.amt}));
     const rows=Object.values(agg).sort((a,b)=>b.amt-a.amt);const tot=rows.reduce((x,r)=>x+r.amt,0);
@@ -359,7 +352,7 @@ function vPay(){
   <ul class="rows">${months.map(m=>`<li class="rowitem"><span style="flex:1">${periodLabel(m.k)}<span class="sub">延べ ${dayStr(m.days)}人工</span><span style="display:block;height:8px;border-radius:4px;background:var(--accent);opacity:.75;width:${Math.round(m.net/max*100)}%;margin-top:6px"></span></span><b class="num">${yen(m.net)}</b></li>`).join('')}</ul></section>`}
 
 function vSettings(){const st=S.settings;
-  const list=(items,act,lab,sub)=>items.length?`<ul class="rows">${items.map(it=>`<li><button class="rowitem" data-act="${act}" data-id="${it.id}"><span>${esc(lab(it))}<span class="sub">${esc(sub(it))}</span></span><span class="chev muted">›</span></button></li>`).join('')}</ul>`:'<p class="muted" style="margin:0">まだ登録がありません。</p>';
+  const list=(items,act,lab,sub)=>items.length?`<ul class="rows">${items.map(it=>`<li><button class="rowitem" data-act="${act}" data-id="${esc(it.id)}"><span>${esc(lab(it))}<span class="sub">${esc(sub(it))}</span></span><span class="chev muted">›</span></button></li>`).join('')}</ul>`:'<p class="muted" style="margin:0">まだ登録がありません。</p>';
   let cl='<option value="0"'+(st.closing?'':' selected')+'>月末締め</option>';for(let d=1;d<=28;d++)cl+=`<option value="${d}"${st.closing===d?' selected':''}>${d}日締め</option>`;
   return `
   <section class="card"><h2 class="h">応援の大工</h2>
@@ -396,10 +389,10 @@ function renderRec(){const d=draft;
   openSheet(`${sheetHead(d.id?'記録を直す':'作業の記録')}
   <label class="fld"><span>日にち</span><input type="date" id="rDate" value="${d.date}"></label>
   ${!d.id&&S.records.length?'<button class="btn ghost wide" data-act="recSame">前回と同じ現場・メンバーにする</button>':''}
-  <div class="fld"><span>現場</span><div class="chips col">${sitesByRecent().map(s=>`<button class="chip ${d.siteId===s.id?'on':''}" data-act="recSite" data-id="${s.id}" aria-pressed="${d.siteId===s.id}"><b>${esc(s.name)}</b><small>${esc(siteMeta(s))}</small></button>`).join('')}
+  <div class="fld"><span>現場</span><div class="chips col">${sitesByRecent().map(s=>`<button class="chip ${d.siteId===s.id?'on':''}" data-act="recSite" data-id="${esc(s.id)}" aria-pressed="${d.siteId===s.id}"><b>${esc(s.name)}</b><small>${esc(siteMeta(s))}</small></button>`).join('')}
   <button class="chip add" data-act="newSiteFromRec">＋ 新しい現場を登録</button></div></div>
   <div class="fld"><span>来た大工 <small>タップで選ぶ（何人でも）</small></span><div class="workers">${S.carpenters.map(c=>{const w=d.workers.find(w=>w.cid===c.id);
-    return `<div class="wk ${w?'on':''}"><button class="wk-name" data-act="recW" data-id="${c.id}" aria-pressed="${!!w}"><span class="check">${w?'✓':''}</span>${esc(c.name)}</button></div>`}).join('')}
+    return `<div class="wk ${w?'on':''}"><button class="wk-name" data-act="recW" data-id="${esc(c.id)}" aria-pressed="${!!w}"><span class="check">${w?'✓':''}</span>${esc(c.name)}</button></div>`}).join('')}
   <button class="chip add" data-act="newCarpFromRec">＋ 大工を登録</button></div></div>
   <div class="sheet-actions">${d.id?'<button class="btn danger" data-act="recDel">削除</button>':''}<button class="btn primary grow" data-act="recSave">保存する</button></div>`)}
 
@@ -427,12 +420,12 @@ function renderAdj(){openSheet(`${sheetHead(F.id?'項目を直す':'項目を追
 
 /* ---------- 明細 ---------- */
 function slipHTML(sl,edit){const st=S.settings;
-  return `<div class="slip"><div class="slip-hd"><h3>支払明細書</h3><span class="stamp">下書き・要確認</span></div>
+  return `<div class="slip"><div class="slip-hd"><h3>支払明細書</h3></div>
   <div class="slip-meta"><div><div class="to">${esc(sl.c.name)} 様</div><div class="muted">${periodLabel(sl.key)}（${rangeLabel(sl.key,sl.cl)}）</div></div><div class="from">${esc(st.biz)}<br>${esc(st.addr)}</div></div>
   <div class="tbl-wrap"><table class="slip-tb"><thead><tr><th>現場</th><th>日数</th><th>金額</th></tr></thead>
   <tbody>${sl.lines.length?sl.lines.map(l=>`<tr><td>${esc(l.name)}<small>${esc(l.note)}</small></td><td>${dayStr(l.days)}</td><td>${yen(l.amt)}</td></tr>`).join(''):'<tr><td colspan="3" class="muted">この期間の作業記録はありません</td></tr>'}</tbody>
   <tfoot><tr><th>作業代 計</th><td>${dayStr(sl.days)}日</td><td>${yen(sl.sub)}</td></tr></tfoot></table></div>
-  <div>${sl.adjs.map(a=>edit?`<label class="adj-row"><span>${a.sign>0?'＋':'－'} ${esc(a.name)}</span><input id="adj-${a.id}" data-adj="${a.id}" inputmode="numeric" value="${a.val||''}" placeholder="0"></label>`:(a.val?`<div class="adj-row"><span>${a.sign>0?'＋':'－'} ${esc(a.name)}</span><span class="num">${yen(a.val)}</span></div>`:'')).join('')}</div>
+  <div>${sl.adjs.map(a=>edit?`<label class="adj-row"><span>${a.sign>0?'＋':'－'} ${esc(a.name)}</span><input id="adj-${esc(a.id)}" data-adj="${esc(a.id)}" inputmode="numeric" value="${a.val||''}" placeholder="0"></label>`:(a.val?`<div class="adj-row"><span>${a.sign>0?'＋':'－'} ${esc(a.name)}</span><span class="num">${yen(a.val)}</span></div>`:'')).join('')}</div>
   <div class="net"><span>差引支給額</span><strong class="num">${yen(sl.net)}</strong></div></div>`}
 function renderSlip(){const sl=calcSlip(ui.slip.cid,ui.slip.key);if(!sl){closeSheet();return}
   openSheet(`${sheetHead('明細の確認')}${slipHTML(sl,true)}
@@ -449,8 +442,7 @@ function slipCanvas(sl){
   const L=(t,X,Y,c,al)=>{x.fillStyle=c||ink;x.textAlign=al||'left';x.fillText(t,X,Y)};
   x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle=acc;x.fillRect(0,0,W,16);
   let y=P+56;font(58,700);L('支払明細書',P,y);
-  font(28,700);x.strokeStyle='#8A5300';x.lineWidth=3;const sw=x.measureText('下書き・要確認').width;x.strokeRect(W-P-sw-24,y-42,sw+24,54);L('下書き・要確認',W-P-12,y-5,'#8A5300','right');
-  y+=64;font(30);L(`${periodLabel(sl.key)}（${rangeLabel(sl.key,sl.cl)}）`,P,y,mut);
+    y+=64;font(30);L(`${periodLabel(sl.key)}（${rangeLabel(sl.key,sl.cl)}）`,P,y,mut);
   y+=96;font(48,700);L(fit(x,sl.c.name+' 様',560),P,y);x.fillStyle=ink;x.fillRect(P,y+16,580,3);
   font(26);L(fit(x,S.settings.biz,360),W-P,y-34,mut,'right');L(fit(x,S.settings.addr,360),W-P,y+4,mut,'right');
   y+=72;x.fillStyle='#E1E9F5';x.fillRect(P,y,W-2*P,60);font(26,700);L('現場',P+18,y+40);L('日数',W-P-300,y+40,ink,'right');L('金額',W-P-18,y+40,ink,'right');y+=60;
@@ -460,7 +452,7 @@ function slipCanvas(sl){
   x.fillStyle=ink;x.fillRect(P,y,W-2*P,3);font(32,700);L('作業代 計',P+18,y+62);L(dayStr(sl.days)+'日',W-P-300,y+62,ink,'right');L(yen(sl.sub),W-P-18,y+62,ink,'right');y+=96;
   font(30);adjR.forEach(a=>{L(`${a.sign>0?'＋':'－'} ${a.name}`,P+18,y+42);L(yen(a.val),W-P-18,y+42,ink,'right');y+=64});
   y+=20;x.fillStyle=acc;x.fillRect(P,y,W-2*P,120);font(34,700);L('差引支給額',P+28,y+74,'#fff');font(56,700);L(yen(sl.net),W-P-28,y+80,'#fff','right');
-  y+=176;const t=new Date();font(24);L(`作成日 ${t.getFullYear()}/${t.getMonth()+1}/${t.getDate()}　大工給与帳で作成した参考値です`,P,y,mut);
+  y+=176;const t=new Date();font(24);L(`作成日 ${t.getFullYear()}/${t.getMonth()+1}/${t.getDate()}`,P,y,mut);
   return cv}
 let imgBlob=null,imgName='';
 function showSlipImage(){const sl=calcSlip(ui.slip.cid,ui.slip.key);const cv=slipCanvas(sl);const url=cv.toDataURL('image/png');
@@ -546,9 +538,10 @@ document.addEventListener('change',e=>{const t=e.target;
   if(t.dataset.adj&&ui.slip){const{key,cid}=ui.slip;S.adj[key]=S.adj[key]||{};S.adj[key][cid]=S.adj[key][cid]||{};S.adj[key][cid][t.dataset.adj]=toNum(t.value);save();
     const p=$('#sheet .sheet-panel'),y=p.scrollTop;renderSlip();p.scrollTop=y}});
 $('#impFile').addEventListener('change',async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
-  try{const d=JSON.parse(await f.text());if(!Array.isArray(d.carpenters)||!Array.isArray(d.records))throw 0;
+  try{const raw=JSON.parse(await f.text());if(!raw||!Array.isArray(raw.carpenters)||!Array.isArray(raw.records))throw 0;
+    const d=clean(migrate({...blank(),v:1,...raw}));
     if(!await ask(`バックアップ（記録${d.records.length}件）で今のデータを置き換えますか？`,'置き換える',true))return;
-    S=migrate({...blank(),v:1,...d});save();render();toast('バックアップから戻しました')}catch(err){toast('このファイルは読み込めません。書き出したバックアップ（.json）を選んでください')}});
+    S=d;save();render();toast('バックアップから戻しました')}catch(err){toast('このファイルは読み込めません。書き出したバックアップ（.json）を選んでください')}});
 window.addEventListener('afterprint',()=>{$('#printArea').innerHTML=''});
 render();
 })();
